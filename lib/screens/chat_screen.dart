@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 final _firestore = Firestore.instance;
 FirebaseUser loggedInUser;
+final scrollController = ScrollController();
 
 class ChatScreen extends StatefulWidget {
   static String id = 'chat';
@@ -64,10 +65,11 @@ class _ChatScreenState extends State<ChatScreen> {
           IconButton(
               icon: Icon(Icons.close),
               onPressed: () {
-                //Implement logout functionality
+//                //Implement logout functionality
 //                _auth.signOut();
 //                Navigator.pop(context);
-                messagesStream();
+//                messagesStream();
+                print(DateTime.now());
               }),
         ],
         title: Text('⚡️Chat'),
@@ -103,8 +105,11 @@ class _ChatScreenState extends State<ChatScreen> {
                       _firestore.collection('messages').add({
                         'string': messgaeText,
                         'sender': loggedInUser.email,
+                        'date': DateTime.now(),
                       });
                       messageTextController.clear();
+                      scrollController
+                          .jumpTo(scrollController.position.minScrollExtent);
                     },
                     child: Text(
                       'Send',
@@ -125,7 +130,10 @@ class MessageStream extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
-      stream: _firestore.collection('messages').snapshots(),
+      stream: _firestore
+          .collection('messages')
+          .orderBy("date", descending: true)
+          .snapshots(),
       builder: (context, snapshot) {
         List<MessageBubble> messageBubbles = [];
         if (!snapshot.hasData) {
@@ -135,7 +143,7 @@ class MessageStream extends StatelessWidget {
             ),
           );
         }
-        final messages = snapshot.data.documents.reversed;
+        final messages = snapshot.data.documents;
         for (var message in messages) {
           final messageText = message.data['string'];
           final messageSender = message.data['sender'];
@@ -152,6 +160,7 @@ class MessageStream extends StatelessWidget {
 
         return Expanded(
           child: ListView(
+            controller: scrollController,
             reverse: true,
             children: messageBubbles,
           ),
